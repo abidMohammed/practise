@@ -14,6 +14,8 @@ public class VendingMachine {
     int item=0;
     int amountEntered=0;
     int amountToReturn=0;
+    int totalAmount=0;
+    boolean invalidInput=true;
 
 
 	public VendingMachine() {
@@ -28,42 +30,85 @@ public class VendingMachine {
 	}
 
 	private void showmenu() {
+		boolean hasSufficientFunds;
 		System.out.println("Welcome.\nPress 1 for Coke, 2 for Pepsi, 3 for Soda");
         br = new BufferedReader(new InputStreamReader(System.in));
         try {
         	String a=br.readLine();
         	item=Integer.parseInt(a);
 			System.out.println("You Selected "+itemDrinkMap.get(item));
-			System.out.println("Please Pay "+getPrice(item)+" cents");
-			amountEntered=Integer.parseInt(a);
-			dispense(item,amountEntered);
-			reset();
+			System.out.println("Please Pay "+getPrice(item)+" cents.You can enter 1,5,10,25 Cents only");
+			do{
+			hasSufficientFunds=collectMoney(a);
+			}while(!hasSufficientFunds);
+
+			dispense(item);
+			
+			//reset();
 		} catch (IOException e) {
 			System.out.println("Invalid Input");
 		}
+	}
+	
+	private boolean collectMoney(String a) throws IOException{
+		totalAmount=accumulateCoins();
+		
+		if(totalAmount>getPrice(item)){
+			amountToReturn=totalAmount-getPrice(item);
+			System.out.println("Please collect change of "+amountToReturn+" cents");
+		}
+		else if(totalAmount<getPrice(item)){
+			System.out.println("Item Price is "+getPrice(item)+". You entered "+totalAmount);
+			System.out.println("Please enter "+(getPrice(item)-totalAmount)+" cents");
+			totalAmount=accumulateCoins();
+		}
+		
+		if(totalAmount >= getPrice(item))
+		{
+			return true;
+		}
+		return false;
+	}
+	
+	private int validate(int input) throws IOException{
+		do{
+		if(input == 1 || input == 5 || input == 10 || input == 25 || input == 99){
+			invalidInput=false;
+		}
+		else{
+			System.out.println("Invalid Input. You Entered:"+input+" .Allowed Input: 1,5,10,25,99.Try Again");
+			input=Integer.parseInt(br.readLine());
+		}
+		}
+		while(invalidInput);
+		
+		return input;
+	}
+	
+	private int accumulateCoins() throws IOException{
+		boolean continueLoop;
+		
+		do{
+		System.out.println("Enter coins as needed . Enter 99 to finish entering coins");
+
+		String input=br.readLine();
+		amountEntered=validate(Integer.valueOf(input));
+
+		if(!input.contentEquals("99")){
+		totalAmount=totalAmount+amountEntered;
+		}
+	    continueLoop=input.contentEquals("99");
+
+		}while(!continueLoop);
+		
+		return totalAmount;
 	}
 	
 	private int getPrice(int item){
 		return drinkPriceMap.get(item);
 	}
 	
-	private void dispense(int item,int amountEntered){
-		if(amountEntered>getPrice(item)){
-			System.out.println("Dispensing "+itemDrinkMap.get(item));
-			amountToReturn=amountEntered-getPrice(item);
-			System.out.println("Please collect change of "+amountToReturn+" cents");
-		}
-		else if(amountEntered<getPrice(item)){
-			System.out.println("Item Price is "+getPrice(item)+"You entered "+amountEntered);
-			System.out.println("Please enter "+(getPrice(item)-amountEntered)+" cents");
-		}
-		else{
-			System.out.println("Dispensing "+itemDrinkMap.get(item));
-		}
-		
-	}
-	
-	private void reset(){
-		System.out.println("Reset completed");
+	private void dispense(int item){
+		System.out.println("Dispensing "+itemDrinkMap.get(item));
 	}
 }
