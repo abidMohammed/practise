@@ -7,108 +7,143 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class VendingMachine {
-	
-    BufferedReader br = null;
-    Map<Integer,String> itemDrinkMap = new HashMap<Integer,String>();
-    Map<Integer,Integer> drinkPriceMap = new HashMap<Integer,Integer>();
-    int item=0;
-    int amountEntered=0;
-    int amountToReturn=0;
-    int totalAmount=0;
-    boolean invalidInput=true;
 
+	BufferedReader br = null;
+	Map<Integer, String> choiceDrinkMap = new HashMap<Integer, String>();
+	Map<Integer, Integer> drinkPriceMap = new HashMap<Integer, Integer>();
+	int item;
+	int amountEntered;
+	int amountToReturn;
+	int totalAmount;
+	boolean invalidInput = true;
+	boolean hasSufficientFunds;
+	boolean resetAndRefund;
 
 	public VendingMachine() {
-		itemDrinkMap.put(1, "Coke");
-		itemDrinkMap.put(2, "Pepsi");
-		itemDrinkMap.put(3, "Soda");
-		
-		drinkPriceMap.put(1, 25);
-		drinkPriceMap.put(2, 35);
-		drinkPriceMap.put(3, 45);
+		init();
 		showmenu();
 	}
 
+	private void init() {
+		choiceDrinkMap.put(1, "Coke");
+		choiceDrinkMap.put(2, "Pepsi");
+		choiceDrinkMap.put(3, "Soda");
+
+		drinkPriceMap.put(1, 25);
+		drinkPriceMap.put(2, 35);
+		drinkPriceMap.put(3, 45);
+	}
+
 	private void showmenu() {
-		boolean hasSufficientFunds;
-		System.out.println("Welcome.\nPress 1 for Coke, 2 for Pepsi, 3 for Soda");
-        br = new BufferedReader(new InputStreamReader(System.in));
-        try {
-        	String a=br.readLine();
-        	item=Integer.parseInt(a);
-			System.out.println("You Selected "+itemDrinkMap.get(item));
-			System.out.println("Please Pay "+getPrice(item)+" cents.You can enter 1,5,10,25 Cents only");
-			do{
-			hasSufficientFunds=collectMoney(a);
-			}while(!hasSufficientFunds);
+		totalAmount = 0;
+		System.out.println("Press 1 for Coke, 2 for Pepsi, 3 for Soda");
+
+		br = new BufferedReader(new InputStreamReader(System.in));
+		try {
+			String choice = br.readLine();
+			item = Integer.parseInt(choice);
+			if(item<1 || item >3){
+				throw new NumberFormatException();
+			}
+			System.out.println("You Selected " + choiceDrinkMap.get(item));
+			System.out.println("Please Pay " + getPrice(item) + " cents.You can enter 1,5,10,25 Cents only");
+			do {
+				hasSufficientFunds = collectMoney(choice);
+			} while (!hasSufficientFunds);
 
 			dispense(item);
-			
-			//reset();
-		} catch (IOException e) {
-			System.out.println("Invalid Input");
+
+			// reset();
+		} catch (NumberFormatException | IOException e) {
+			System.out.println("Invalid Input.Please try again");
+		} finally {
+			showmenu();
 		}
 	}
-	
-	private boolean collectMoney(String a) throws IOException{
-		totalAmount=accumulateCoins();
-		
-		if(totalAmount>getPrice(item)){
-			amountToReturn=totalAmount-getPrice(item);
-			System.out.println("Please collect change of "+amountToReturn+" cents");
+
+	private boolean collectMoney(String a) throws IOException {
+		totalAmount = accumulateCoins();
+
+		if (totalAmount > getPrice(item)) {
+			returnMoney();
+		} else if (totalAmount < getPrice(item)) {
+			totalAmount = accumulateCoins();
 		}
-		else if(totalAmount<getPrice(item)){
-			System.out.println("Item Price is "+getPrice(item)+". You entered "+totalAmount);
-			System.out.println("Please enter "+(getPrice(item)-totalAmount)+" cents");
-			totalAmount=accumulateCoins();
-		}
-		
-		if(totalAmount >= getPrice(item))
-		{
+
+		if (totalAmount >= getPrice(item)) {
+			returnMoney();
 			return true;
 		}
+		
 		return false;
 	}
-	
-	private int validate(int input) throws IOException{
-		do{
-		if(input == 1 || input == 5 || input == 10 || input == 25 || input == 99){
-			invalidInput=false;
+
+	private void returnMoney() {
+		amountToReturn = totalAmount - getPrice(item);
+		if (amountToReturn > 0 && !resetAndRefund) {
+			System.out.println("Please collect change of " + amountToReturn + " cents");
 		}
-		else{
-			System.out.println("Invalid Input. You Entered:"+input+" .Allowed Input: 1,5,10,25,99.Try Again");
-			input=Integer.parseInt(br.readLine());
-		}
-		}
-		while(invalidInput);
-		
-		return input;
 	}
 	
-	private int accumulateCoins() throws IOException{
-		boolean continueLoop;
-		
-		do{
-		System.out.println("Enter coins as needed . Enter 99 to finish entering coins");
+	private void refundMoney() {
+		System.out.println("Cancelling Request .Please collect your " + totalAmount + " cents");
+	}
 
-		String input=br.readLine();
-		amountEntered=validate(Integer.valueOf(input));
+	private int validate(String inputString) throws IOException {
+		int inputNum = 0;
 
-		if(!input.contentEquals("99")){
-		totalAmount=totalAmount+amountEntered;
+		try {
+			inputNum = Integer.valueOf(inputString);
+
+			do {
+				if (inputNum == 1 || inputNum == 5 || inputNum == 10 || inputNum == 25 || inputNum == 99 || inputNum == 0) {
+					invalidInput = false;
+				} else {
+					System.out.println(
+							"Invalid Input. You Entered:" + inputString + " .Allowed Input: 1,5,10,25,99,0.Try Again");
+					inputNum = Integer.parseInt(br.readLine());
+				}
+			} while (invalidInput);
+		} catch (NumberFormatException e) {
+			System.out.println("Invalid Input " + inputString + " .Please Enter Only Numbers.");
 		}
-	    continueLoop=input.contentEquals("99");
+		return inputNum;
+	}
 
-		}while(!continueLoop);
-		
+	private int accumulateCoins() throws IOException {
+		boolean continueLoop;
+		System.out.println("Item Price is " + getPrice(item) + ". You entered " + totalAmount + ".Pending coins "
+				+ (getPrice(item) - totalAmount) + " cents");
+
+		do {
+			System.out.println("Enter coins as needed . Enter 99 to finish entering coins.Press 0 to cancel request");
+
+			String input = br.readLine();
+			amountEntered = validate(input);
+
+			if (!input.contentEquals("99") && !input.contentEquals("0")) {
+				totalAmount = totalAmount + amountEntered;
+			}
+			else if(input.contentEquals("0")){
+				resetAndRefund=true;
+			}
+			continueLoop = input.contentEquals("99") || input.contentEquals("0");
+
+		} while (!continueLoop);
+
 		return totalAmount;
 	}
-	
-	private int getPrice(int item){
+
+	private int getPrice(int item) {
 		return drinkPriceMap.get(item);
 	}
-	
-	private void dispense(int item){
-		System.out.println("Dispensing "+itemDrinkMap.get(item));
+
+	private void dispense(int item) {
+		if(resetAndRefund){
+			refundMoney();
+		}
+		else{
+			System.out.println("Dispensing " + choiceDrinkMap.get(item) + ".Please collect your item");	
+		}
 	}
 }
