@@ -11,13 +11,13 @@ public class VendingMachine {
 	BufferedReader br = null;
 	Map<Integer, String> choiceDrinkMap = new HashMap<Integer, String>();
 	Map<Integer, Integer> drinkPriceMap = new HashMap<Integer, Integer>();
-	int item;
-	int amountEntered;
-	int amountToReturn;
-	int totalAmount;
-	boolean invalidInput = true;
-	boolean hasSufficientFunds;
-	boolean resetAndRefund;
+	private int item;
+	private int amountEntered;
+	private int amountToReturn;
+	private int totalAmount;
+	private boolean invalidInput = true;
+	private boolean hasSufficientFunds;
+	private boolean resetAndRefund;
 
 	public VendingMachine() {
 		init();
